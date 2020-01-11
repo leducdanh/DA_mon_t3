@@ -11,13 +11,13 @@ var count = 0 //count user in room
 var idCurRoom = 0
 var lstbeforeUser = []
 io.on('connection', (socket) => {
-  socket.username = 'anonymous';
   if (count >= 1 && idCurRoom !== 0) {
     socket.room = JSON.stringify(idCurRoom)
     socket.join(JSON.stringify(idCurRoom));
     lstbeforeUser.push(socket.room + "_" + socket.id)
     idCurRoom = 0
     count = 0
+    io.sockets.in(socket.id).emit('TypeChess', { text:"O", color: "red" })
   } else {
     do {
       idCurRoom = Math.floor(Math.random() * 999999)
@@ -25,6 +25,7 @@ io.on('connection', (socket) => {
     socket.room = JSON.stringify(idCurRoom)
     socket.join(JSON.stringify(idCurRoom));
     lstUserInRoom.push(JSON.stringify(idCurRoom))
+    io.to(socket.id).emit('TypeChess', { text:"X", color: "black" })
   }
 
   count += 1
@@ -71,35 +72,3 @@ io.on('connection', (socket) => {
 })
 
 http.listen(3000, () => console.log('listening on port 3000'))
-
-
-/**
- * const express = require('express')
-const app = express()
-const http = require('http').Server(app)
-let server = require("http").Server(app);
-const io = require("socket.io")(server)
-
-// app.use('/style', express.static(__dirname + '/style'))
-var Port = 0;
-app.get('/:post', (req, res) => {
-    console.log(req.params.post)
-    res.sendFile(__dirname + '/index.html')})
-server.listen(3000);
-io.on('connection', (socket) => {
-    console.log("aasdasdasdas")
-  socket.username = 'anonymous';
-  socket.on('change username', (name) => socket.username = name)
-  socket.on('message', (pos, text) => io.emit('message',
-  { 'pos': pos, 'text':  text}))
-
-  socket.on('join', (username) => {
-    if (username != null) {
-      socket.username = username
-    }
-    socket.broadcast.emit('message',
-    { 'user': 'Server', 'message': socket.username + ' has joined!'})
-  })
-})
-
- */

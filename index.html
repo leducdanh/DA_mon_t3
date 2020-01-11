@@ -3,51 +3,56 @@
 
 <head>
     <title>Fireside Chat</title>
-    <!-- <link rel="stylesheet" href="/style/style.css"> -->
+    <!-- Latest compiled and minified CSS -->
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+        integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+        integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 </head>
 
 <body>
-    <h1>Fireside Chat</h1>
     <div id="app">
-        <div id="app">
-            <div class="container" id="chessboardPlacer">
-                <div class="center" id="chessboardCenterPlacer">
-                    <!-- <center id="chessboardCenterCenterPlacer"> -->
-                    <table id="chessboard"
-                        style="display: inline-block; background-color: rgb(255, 191, 0); text-align: left; margin-left: auto; margin-right: auto;"
-                        border="1" cellpadding="2" cellspacing="2">
-                        <tbody>
-                            <tr v-for="(itemtr, indextr) in tableChess" :key="indextr">
-                                <!-- <Contact-Component
-                      v-for="(item, index) in itemtr"
-                      :key="indextr + '_' + index"
-                      :chessText="item.chessText"
-                      :chessType="item.chessType"
-                      :chessTable="item.chessTable"
-                      :chessPos="item.chessPos"
-                      :callback="doSomething"
-                      @ChessMove="ChessMoveApp"
-                      :isClick="move"
-                    ></Contact-Component> -->
-                                <td :class="item.chessTable" v-for="(item, index) in itemtr"
-                                    :key="indextr + '_' + index">
-                                    <button :class="item.chessType" :id="item.chessPos" contenteditable="false"
-                                        v-on:click="onClickChess(item.chessPos, item.chessText)" :disabled="isGameover">
-                                        <b>{{item.chessText}}</b>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <!-- </center> -->
+        <template>
+            <div class="container mt-5" id="chessboardPlacer">
+                <div class="row text-center pt-5" id="chessboardCenterPlacer">
+                    
+                    <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3" style="background-color: aqua; height: 900px;">
+                        <h1><b>Bạn chơi quân </b><b :class="ColorTypeChessOfUser">{{TextTypeChessOfUser}}</b></h1>
+                        <h1><b>Cờ </b><b :class="ColorTypeChessNext">{{TextTypeChessNext}}</b><b> đi cờ</b></h1>
+                        <h1 v-show="isGameover"><b>Cờ </b><b :class="ColorTypeChessWin">{{TextTypeChessWin}}</b><b> đã thắng</b></h1>
+                    </div>
+                    
+                    <div class="col-xs-9">
+                        <table id="chessboard"
+                            style="display: inline-block; background-color: rgb(255, 191, 0); text-align: left; margin-left: auto; margin-right: auto;"
+                            border="1" cellpadding="2" cellspacing="2">
+                            <tbody>
+                                <tr v-for="(itemtr, indextr) in tableChess" :key="indextr">
+                                    <td :class="item.chessTable" v-for="(item, index) in itemtr"
+                                        :key="indextr + '_' + index">
+                                        <button :class="item.chessType" :id="item.chessPos" contenteditable="false"
+                                            v-on:click="onClickChess(item.chessPos, item.chessText)"
+                                            :disabled="isGameover">
+                                            <b>{{item.chessText}}</b>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
         </template>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script>
+        // var host = "192.168.69.106"
+        var host = "localhost"
+        var port = "3000"
         var socket = null;
         var app = new Vue({
             // State 0: select username
@@ -58,23 +63,14 @@
                 move: false,
                 isGameover: false,
                 lstChess: [],
+                TextTypeChessOfUser: "",
+                ColorTypeChessOfUser: "",
+                TextTypeChessNext: "X",
+                ColorTypeChessNext: "black",
+                TextTypeChessWin: "",
+                ColorTypeChessWin: "",
             },
             methods: {
-                // sendMessage: function () {
-                //     socket.emit('message', this.message);
-                //     this.message = '';
-                // },
-                // setUsername: function () {
-                //     socket.emit('join', this.username);
-                //     this.username = '';
-                //     this.state = 1;
-                // },
-                // continueWithoutUsername: function () {
-                //     socket.emit('join', null);
-                //     this.state = 1;
-                // },
-
-
                 onClickChess(pos, text) {
                     socket.emit("message", pos, text)
                 },
@@ -192,7 +188,7 @@
                     }
                     this.tableChess.push(rowChess);
                 }
-                socket = io();
+                socket = io(host + ":" + port);
             },
             mounted: function () {
                 socket.on('message', function (messToSV) {
@@ -201,26 +197,36 @@
                     let pointX = Number(messToSV.pos.split("_")[0])
                     let pointY = Number(messToSV.pos.split("_")[1])
                     let text = app.move ? "O" : "X";
+                    let color = app.move ? "red" : "black";
                     app.tableChess[pointX][pointY].chessText = text
-                    app.tableChess[pointX][pointY].chessType = app.move ? "red" : "black";
+                    app.tableChess[pointX][pointY].chessType = color;
                     app.move = !app.move
                     app.lstChess.push(messToSV.pos + "@@" + text)
                     app.isGameover = app.checkIsWin(messToSV.pos, text)
+                    if (app.isGameover){
+                        app.TextTypeChessWin = text
+                        app.ColorTypeChessWin = color
+                    }
+                    app.curChess = !app.curChess
+                    app.TextTypeChessNext = text === "X" ? "O" : "X"
+                    app.ColorTypeChessNext = color === "black" ? "red" : "black"
                     app.$nextTick(function () {
                     });
+                });
+
+                socket.on('TypeChess', function (messToSV) {
+                    app.TextTypeChessOfUser = messToSV.text
+                    app.ColorTypeChessOfUser = messToSV.color
                 });
             }
         });
     </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 </body>
 
 
-<style>
+<style scoped>
     #chessboardCenterPlacer {
-        width: 100%;
-    }
-
-    div.container {
         width: 100%;
     }
 
@@ -262,7 +268,7 @@
         font-size: 20px;
         text-align: center;
         width: 100% !important;
-        height: 30px !important;
+        /* height: 30px !important; */
     }
 
     button.red {
@@ -272,9 +278,8 @@
         font-size: 20px;
         text-align: center;
         width: 100% !important;
-        height: 30px !important;
     }
-
+    
     button.black {
         background-color: #7f7f00;
         border-color: #7f7f00;
@@ -282,19 +287,18 @@
         font-size: 20px;
         text-align: center;
         width: 100% !important;
-        height: 30px !important;
     }
 
-    button.neutral {
-        background-color: #ffffff;
-        border-color: #7f7f00;
-        color: #ffffff;
-        font-size: 20px;
-        text-align: center;
-        width: 100% !important;
-        height: 30px !important;
+    b.red{
+        color: #ff0000;
+    }
+    b.black{
+        color: #000000;
     }
 
+    td{
+        padding: 2px;
+    }
     td.red {
         background-color: #7f0000;
     }
