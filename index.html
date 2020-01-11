@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Fireside Chat</title>
+    <!-- <link rel="stylesheet" href="/style/style.css"> -->
+</head>
+
+<body>
+    <h1>Fireside Chat</h1>
+    <div id="app">
+        <div id="app">
+            <div class="container" id="chessboardPlacer">
+                <div class="center" id="chessboardCenterPlacer">
+                    <!-- <center id="chessboardCenterCenterPlacer"> -->
+                    <table id="chessboard"
+                        style="display: inline-block; background-color: rgb(255, 191, 0); text-align: left; margin-left: auto; margin-right: auto;"
+                        border="1" cellpadding="2" cellspacing="2">
+                        <tbody>
+                            <tr v-for="(itemtr, indextr) in tableChess" :key="indextr">
+                                <!-- <Contact-Component
+                      v-for="(item, index) in itemtr"
+                      :key="indextr + '_' + index"
+                      :chessText="item.chessText"
+                      :chessType="item.chessType"
+                      :chessTable="item.chessTable"
+                      :chessPos="item.chessPos"
+                      :callback="doSomething"
+                      @ChessMove="ChessMoveApp"
+                      :isClick="move"
+                    ></Contact-Component> -->
+                                <td :class="item.chessTable" v-for="(item, index) in itemtr"
+                                    :key="indextr + '_' + index">
+                                    <button :class="item.chessType" :id="item.chessPos" contenteditable="false"
+                                        v-on:click="onClickChess(item.chessPos, item.chessText)" :disabled="isGameover">
+                                        <b>{{item.chessText}}</b>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- </center> -->
+                </div>
+            </div>
+        </div>
+        </template>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        var socket = null;
+        var app = new Vue({
+            // State 0: select username
+            // State 1: chat application
+            el: '#app',
+            data: {
+                tableChess: [],
+                move: false,
+                isGameover: false,
+                lstChess: [],
+            },
+            methods: {
+                // sendMessage: function () {
+                //     socket.emit('message', this.message);
+                //     this.message = '';
+                // },
+                // setUsername: function () {
+                //     socket.emit('join', this.username);
+                //     this.username = '';
+                //     this.state = 1;
+                // },
+                // continueWithoutUsername: function () {
+                //     socket.emit('join', null);
+                //     this.state = 1;
+                // },
+
+
+                onClickChess(pos, text) {
+                    socket.emit("message", pos, text)
+                },
+
+                checkIsWin(pos, text) {
+                    let count = 1;
+                    let pointX = Number(pos.split("_")[0])
+                    let pointY = Number(pos.split("_")[1])
+                    // doc
+                    while (1) {
+                        let chess = (pointX - 1) + "_" + pointY + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX -= 1
+                    }
+                    pointX = Number(pos.split("_")[0])
+                    while (1) {
+                        let chess = (pointX + 1) + "_" + pointY + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX += 1
+                    }
+                    if (count >= 5) return true
+
+                    // ngang
+                    count = 1
+                    while (1) {
+                        let chess = pointX + "_" + (pointY - 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointY -= 1
+                    }
+                    pointY = Number(pos.split("_")[1])
+                    while (1) {
+                        let chess = pointX + "_" + (pointY + 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointY += 1
+                    }
+                    if (count >= 5) return true
+
+                    // diagonal line main
+                    count = 1
+                    pointX = Number(pos.split("_")[0])
+                    pointY = Number(pos.split("_")[1])
+                    while (1) {
+                        let chess = (pointX - 1) + "_" + (pointY + 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX -= 1
+                        pointY += 1
+                    }
+                    pointX = Number(pos.split("_")[0])
+                    pointY = Number(pos.split("_")[1])
+                    while (1) {
+                        let chess = (pointX + 1) + "_" + (pointY - 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX += 1
+                        pointY -= 1
+                    }
+                    if (count >= 5) return true
+
+                    // diagonal line
+                    count = 1
+                    pointX = Number(pos.split("_")[0])
+                    pointY = Number(pos.split("_")[1])
+                    while (1) {
+                        let chess = (pointX - 1) + "_" + (pointY - 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX -= 1
+                        pointY -= 1
+                    }
+                    pointX = Number(pos.split("_")[0])
+                    pointY = Number(pos.split("_")[1])
+                    while (1) {
+                        let chess = (pointX + 1) + "_" + (pointY + 1) + "@@" + text
+                        if (this.lstChess.indexOf(chess) >= 0)
+                            count += 1
+                        else
+                            break;
+                        pointX += 1
+                        pointY += 1
+                    }
+                    if (count >= 5) return true
+
+                    return false
+                },
+            },
+            created: function () {
+                for (let i = 0; i < 20; i++) {
+                    let rowChess = [];
+                    for (let j = 0; j < 20; j++) {
+                        rowChess.push({
+                            chessText: "　",
+                            chessType: "neutral",
+                            chessTable: "red",
+                            chessPos: `${i}_${j}`
+                        });
+                    }
+                    this.tableChess.push(rowChess);
+                }
+                socket = io();
+            },
+            mounted: function () {
+                socket.on('message', function (messToSV) {
+                    // app.isGameover = true
+                    // console.log(messToSV)
+                    let pointX = Number(messToSV.pos.split("_")[0])
+                    let pointY = Number(messToSV.pos.split("_")[1])
+                    let text = app.move ? "O" : "X";
+                    app.tableChess[pointX][pointY].chessText = text
+                    app.tableChess[pointX][pointY].chessType = app.move ? "red" : "black";
+                    app.move = !app.move
+                    app.lstChess.push(messToSV.pos + "@@" + text)
+                    app.isGameover = app.checkIsWin(messToSV.pos, text)
+                    app.$nextTick(function () {
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+
+
+<style>
+    #chessboardCenterPlacer {
+        width: 100%;
+    }
+
+    div.container {
+        width: 100%;
+    }
+
+    div.left {
+        width: 33%;
+        float: left;
+    }
+
+    div.center {
+        width: 34%;
+        float: left;
+    }
+
+    div.right {
+        width: 33%;
+        float: left;
+    }
+
+    button.black {
+        background-color: #777700;
+        border-color: #777700;
+        color: #000000;
+        font-size: 20px;
+        text-align: center;
+    }
+
+    button.white {
+        background-color: #777700;
+        border-color: #777700;
+        color: #ffffff;
+        font-size: 20px;
+        text-align: center;
+    }
+
+    button.neutral {
+        background-color: #ffffff;
+        border-color: #777700;
+        color: #ffffff;
+        font-size: 20px;
+        text-align: center;
+        width: 100% !important;
+        height: 30px !important;
+    }
+
+    button.red {
+        background-color: #7f7f00;
+        border-color: #7f7f00;
+        color: #ff0000;
+        font-size: 20px;
+        text-align: center;
+        width: 100% !important;
+        height: 30px !important;
+    }
+
+    button.black {
+        background-color: #7f7f00;
+        border-color: #7f7f00;
+        color: #000000;
+        font-size: 20px;
+        text-align: center;
+        width: 100% !important;
+        height: 30px !important;
+    }
+
+    button.neutral {
+        background-color: #ffffff;
+        border-color: #7f7f00;
+        color: #ffffff;
+        font-size: 20px;
+        text-align: center;
+        width: 100% !important;
+        height: 30px !important;
+    }
+
+    td.red {
+        background-color: #7f0000;
+    }
+
+    td.black {
+        background-color: #7f7f7f;
+    }
+</style>
+
+</html>
