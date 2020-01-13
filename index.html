@@ -4,7 +4,6 @@
 <head>
     <title>Fireside Chat</title>
     <!-- Latest compiled and minified CSS -->
-    <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
         integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
@@ -17,14 +16,16 @@
     <div id="app">
         <template>
             <div class="container mt-5" id="chessboardPlacer">
+                <h1>{{textAlert}}</h1>
                 <div class="row text-center pt-5" id="chessboardCenterPlacer">
-                    
+
                     <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3" style="background-color: aqua; height: 900px;">
                         <h1><b>Bạn chơi quân </b><b :class="ColorTypeChessOfUser">{{TextTypeChessOfUser}}</b></h1>
                         <h1><b>Cờ </b><b :class="ColorTypeChessNext">{{TextTypeChessNext}}</b><b> đi cờ</b></h1>
-                        <h1 v-show="isGameover"><b>Cờ </b><b :class="ColorTypeChessWin">{{TextTypeChessWin}}</b><b> đã thắng</b></h1>
+                        <h1 v-show="isShowWinner"><b>Cờ </b><b :class="ColorTypeChessWin">{{TextTypeChessWin}}</b><b> đã
+                                thắng</b></h1>
                     </div>
-                    
+
                     <div class="col-xs-9">
                         <table id="chessboard"
                             style="display: inline-block; background-color: rgb(255, 191, 0); text-align: left; margin-left: auto; margin-right: auto;"
@@ -35,7 +36,7 @@
                                         :key="indextr + '_' + index">
                                         <button :class="item.chessType" :id="item.chessPos" contenteditable="false"
                                             v-on:click="onClickChess(item.chessPos, item.chessText)"
-                                            :disabled="isGameover">
+                                            :disabled="!isStartGame">
                                             <b>{{item.chessText}}</b>
                                         </button>
                                     </td>
@@ -61,7 +62,8 @@
             data: {
                 tableChess: [],
                 move: false,
-                isGameover: false,
+                isShowWinner: false,
+                isStartGame: false,
                 lstChess: [],
                 TextTypeChessOfUser: "",
                 ColorTypeChessOfUser: "",
@@ -69,6 +71,7 @@
                 ColorTypeChessNext: "black",
                 TextTypeChessWin: "",
                 ColorTypeChessWin: "",
+                textAlert: ""
             },
             methods: {
                 onClickChess(pos, text) {
@@ -192,7 +195,7 @@
             },
             mounted: function () {
                 socket.on('message', function (messToSV) {
-                    // app.isGameover = true
+                    // app.isStartGame = true
                     // console.log(messToSV)
                     let pointX = Number(messToSV.pos.split("_")[0])
                     let pointY = Number(messToSV.pos.split("_")[1])
@@ -202,10 +205,12 @@
                     app.tableChess[pointX][pointY].chessType = color;
                     app.move = !app.move
                     app.lstChess.push(messToSV.pos + "@@" + text)
-                    app.isGameover = app.checkIsWin(messToSV.pos, text)
-                    if (app.isGameover){
+                    if (app.checkIsWin(messToSV.pos, text)) {
                         app.TextTypeChessWin = text
                         app.ColorTypeChessWin = color
+                        app.textAlert = "Trận đấu kết thúc"
+                        app.isStartGame = false
+                        app.isShowWinner = true
                     }
                     app.curChess = !app.curChess
                     app.TextTypeChessNext = text === "X" ? "O" : "X"
@@ -218,10 +223,25 @@
                     app.TextTypeChessOfUser = messToSV.text
                     app.ColorTypeChessOfUser = messToSV.color
                 });
+
+                socket.on('StartGame', function (messToSV) {
+                    app.textAlert = messToSV.indexUser === 1 ? "Chưa có người chơi cùng" : "Bắt đầu trận"
+                    app.isStartGame = messToSV.startGame
+                });
+                socket.on('OutGame', function (messToSV) {
+                    app.textAlert = "Đối thủ bỏ cuộc"
+                    app.isStartGame = messToSV.startGame
+                    app.TextTypeChessWin = app.TextTypeChessOfUser
+                    app.ColorTypeChessWin = app.ColorTypeChessOfUser
+                    app.isStartGame = false
+                    app.isShowWinner = true
+                }); 
             }
         });
     </script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 </body>
 
 
@@ -279,7 +299,7 @@
         text-align: center;
         width: 100% !important;
     }
-    
+
     button.black {
         background-color: #7f7f00;
         border-color: #7f7f00;
@@ -289,16 +309,18 @@
         width: 100% !important;
     }
 
-    b.red{
+    b.red {
         color: #ff0000;
     }
-    b.black{
+
+    b.black {
         color: #000000;
     }
 
-    td{
+    td {
         padding: 2px;
     }
+
     td.red {
         background-color: #7f0000;
     }
