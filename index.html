@@ -211,6 +211,7 @@
                         app.textAlert = "Trận đấu kết thúc"
                         app.isStartGame = false
                         app.isShowWinner = true
+                        socket.emit("GameOver", true) //game over
                     }
                     app.curChess = !app.curChess
                     app.TextTypeChessNext = text === "X" ? "O" : "X"
