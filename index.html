@@ -17,11 +17,13 @@
         <template>
             <div class="container mt-5" id="chessboardPlacer">
                 <h1>{{textAlert}}</h1>
+                <h1 class="text-center"><b>Cờ </b><b :class="ColorTypeChessNext">{{TextTypeChessNext}}</b><b> đi cờ
+                    </b>{{timer}}</h1>
                 <div class="row text-center pt-5" id="chessboardCenterPlacer">
 
                     <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3" style="background-color: aqua; height: 900px;">
                         <h1><b>Bạn chơi quân </b><b :class="ColorTypeChessOfUser">{{TextTypeChessOfUser}}</b></h1>
-                        <h1><b>Cờ </b><b :class="ColorTypeChessNext">{{TextTypeChessNext}}</b><b> đi cờ</b></h1>
+                        <h1></h1>
                         <h1 v-show="isShowWinner"><b>Cờ </b><b :class="ColorTypeChessWin">{{TextTypeChessWin}}</b><b> đã
                                 thắng</b></h1>
                     </div>
@@ -34,7 +36,7 @@
                                 <tr v-for="(itemtr, indextr) in tableChess" :key="indextr">
                                     <td :class="item.chessTable" v-for="(item, index) in itemtr"
                                         :key="indextr + '_' + index">
-                                        <button :class="item.chessType" :id="item.chessPos" contenteditable="false"
+                                        <button :class="item.chessType" :id="item.chessPos"
                                             v-on:click="onClickChess(item.chessPos, item.chessText)"
                                             :disabled="!isStartGame">
                                             <b>{{item.chessText}}</b>
@@ -51,10 +53,21 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script>
+        // const $ = require('jquery');
         // var host = "192.168.69.106"
         var host = "localhost"
         var port = "3000"
         var socket = null;
+
+        setInterval(function () {
+            if (!app.isStartGame)
+                return
+            if (app.timer < 1) {
+                socket.emit("timeStop", app.TextTypeChessOfUser)
+                return
+            }
+            // app.timer -= 1
+        }, 1000);
         var app = new Vue({
             // State 0: select username
             // State 1: chat application
@@ -71,7 +84,8 @@
                 ColorTypeChessNext: "black",
                 TextTypeChessWin: "",
                 ColorTypeChessWin: "",
-                textAlert: ""
+                textAlert: "",
+                timer: ""
             },
             methods: {
                 onClickChess(pos, text) {
@@ -199,8 +213,12 @@
                     // console.log(messToSV)
                     let pointX = Number(messToSV.pos.split("_")[0])
                     let pointY = Number(messToSV.pos.split("_")[1])
+                    let d = document.getElementsByClassName("chess-active")
+                    if (d.length > 0) {
+                        d[0].className = d[0].className.replace(" chess-active", "")
+                    }
                     let text = app.move ? "O" : "X";
-                    let color = app.move ? "red" : "black";
+                    let color = app.move ? "red chess-active" : "black chess-active";
                     app.tableChess[pointX][pointY].chessText = text
                     app.tableChess[pointX][pointY].chessType = color;
                     app.move = !app.move
@@ -215,7 +233,8 @@
                     }
                     app.curChess = !app.curChess
                     app.TextTypeChessNext = text === "X" ? "O" : "X"
-                    app.ColorTypeChessNext = color === "black" ? "red" : "black"
+                    app.ColorTypeChessNext = app.move ? "red" : "black"
+                    // app.timer = 10
                     app.$nextTick(function () {
                     });
                 });
@@ -228,6 +247,7 @@
                 socket.on('StartGame', function (messToSV) {
                     app.textAlert = messToSV.indexUser === 1 ? "Chưa có người chơi cùng" : "Bắt đầu trận"
                     app.isStartGame = messToSV.startGame
+                    // app.timer = messToSV.indexUser === 1 ? 0 : 10
                 });
                 socket.on('OutGame', function (messToSV) {
                     app.textAlert = "Đối thủ bỏ cuộc"
@@ -236,13 +256,13 @@
                     app.ColorTypeChessWin = app.ColorTypeChessOfUser
                     app.isStartGame = false
                     app.isShowWinner = true
-                }); 
+                });
             }
         });
     </script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
         integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-        crossorigin="anonymous"></script>
+        crossorigin="anonymous"></script> -->
 </body>
 
 
@@ -328,6 +348,10 @@
 
     td.black {
         background-color: #7f7f7f;
+    }
+
+    .chess-active {
+        border-color: chartreuse !important;
     }
 </style>
 
