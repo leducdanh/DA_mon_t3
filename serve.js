@@ -86,8 +86,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', function () {
-    for(let i =0 ; i< lstRoom.length; i++) {
-      if (lstRoom[i].idRoom === socket.room){
+    for (let i = 0; i < lstRoom.length; i++) {
+      if (lstRoom[i].idRoom === socket.room) {
         lstRoom.splice(i, 1)
         break
       }
@@ -104,9 +104,20 @@ io.on('connection', (socket) => {
       count = 0
   });
 
-  
-  socket.on('timeStop', function (text) {
-    // console.log(text)
+
+  socket.on('timeStop', function () {
+    for (let i = 0; i < lstRoom.length; i++) {
+      if (lstRoom[i].UserInRoom.indexOf(socket.id) >= 0) {
+        for (let j = 0 ; j< lstRoom[i].UserInRoom.length ; j++){
+          if (lstRoom[i].UserInRoom[j] === socket.id){
+            io.to(lstRoom[i].UserInRoom[j]).emit('receiveTimeStop', false ) //user lose
+          } else{
+            io.to(lstRoom[i].UserInRoom[j]).emit('receiveTimeStop', true ) //user win
+          }
+        }
+        break
+      }
+    }
   });
 
   socket.on('GameOver', function (isGameOver) {
