@@ -15,17 +15,40 @@
 <body>
     <div id="app">
         <template>
-            
+
             <div class="container">
-                <input type="text" />
+                <input type="text" id="username" />
+
+                <button type="button" class="btn btn-info" @click="CreateRoom">Tạo phòng</button>
                 
-                <button type="button" class="btn btn-info">Tạo phòng</button>
-                
+                <table class="table table-bordered" v-show="!isShowTableChess" >
+                    <thead>
+                        <tr>
+                            <th>idRoom</th>
+                            <th>username</th>
+                            <th>action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in lstIdRoom" :key="item">
+                            <!-- item: idRoom_idUser_username -->
+                            <td>{{item.split("_")[0]}}</td>
+                            <td>{{item.split("_")[2]}}</td>
+                            <td>
+                                <button type="button" class="btn btn-success" @click="joinRoom(item.split('_')[0])">Vào
+                                    Trận</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            
+
+            <div :class="TypeMess" v-show="textAlert !== ''">
+                <h1 class="text-center" style="margin: 0;">{{textAlert}}</h1>
+            </div>
             <!-- chessboardPlacer -->
-            <div class="container mt-5" id="chessboardPlacer">
-                <h1>{{textAlert}}</h1>
+            <div class="container mt-5" v-show="isShowTableChess" id="chessboardPlacer">
+                <button type="button" class="btn btn-info" @click="BackRoom">Quay lại phòng chờ</button>
                 <h1 class="text-center"><b>Cờ </b><b :class="ColorTypeChessNext">{{TextTypeChessNext}}</b><b> đi cờ
                     </b>{{timer}}s</h1>
                 <div class="row text-center pt-5" id="chessboardCenterPlacer">
@@ -57,12 +80,14 @@
                     </div>
                 </div>
             </div>
+
         </template>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
     <script>
-        // const $ = require('jquery');
         // var host = "192.168.69.106"
         var host = "localhost"
         var port = "3000"
@@ -81,8 +106,6 @@
             app.timer -= 1
         }, 1000);
         var app = new Vue({
-            // State 0: select username
-            // State 1: chat application
             el: '#app',
             data: {
                 tableChess: [],
@@ -97,9 +120,22 @@
                 TextTypeChessWin: "",
                 ColorTypeChessWin: "",
                 textAlert: "",
-                timer: ""
+                timer: "",
+                lstIdRoom: [],
+                isShowTableChess: false,
+                TypeMess: "alert alert-info"
             },
             methods: {
+                BackRoom(){
+                    this.isShowTableChess = !this.isShowTableChess
+                },
+                CreateRoom() {
+                    socket.emit("CreateRoom", document.getElementById("username").value)
+                    document.getElementById("username").value = ""
+                },
+                joinRoom(idRoom) {
+                    socket.emit("BeginGame", idRoom)
+                },
                 onClickChess(pos, text) {
                     socket.emit("message", pos, text)
                 },
@@ -221,8 +257,6 @@
             },
             mounted: function () {
                 socket.on('message', function (messToSV) {
-                    // app.isStartGame = true
-                    // console.log(messToSV)
                     let pointX = Number(messToSV.pos.split("_")[0])
                     let pointY = Number(messToSV.pos.split("_")[1])
                     let d = document.getElementsByClassName("chess-active")
@@ -246,7 +280,7 @@
                     app.curChess = !app.curChess
                     app.TextTypeChessNext = text === "X" ? "O" : "X"
                     app.ColorTypeChessNext = app.move ? "red" : "black"
-                    app.timer = 10
+                    app.timer = 600
                     app.$nextTick(function () {
                     });
                 });
@@ -261,6 +295,31 @@
                     app.isStartGame = messToSV.startGame
                     app.timer = messToSV.indexUser === 1 ? 0 : 10
                 });
+
+                socket.on('ReceiveBeginGame', function (messToSV) {
+                    console.log(messToSV)
+                    if (messToSV === false) {
+                        app.TypeMess = "alert alert-warning";
+                        app.textAlert = "Phòng đã đầy"
+                        return
+                    }
+                    app.isShowTableChess = true
+                    app.tableChess = []
+                    app.lstChess = []
+                    for (let i = 0; i < 20; i++) {
+                        let rowChess = [];
+                        for (let j = 0; j < 20; j++) {
+                            rowChess.push({
+                                chessText: "　",
+                                chessType: "neutral",
+                                chessTable: "red",
+                                chessPos: `${i}_${j}`
+                            });
+                        }
+                        app.tableChess.push(rowChess);
+                    }
+                    app.isStartGame = true
+                });
                 socket.on('OutGame', function (messToSV) {
                     app.textAlert = "Đối thủ bỏ cuộc"
                     app.isStartGame = messToSV.startGame
@@ -271,6 +330,7 @@
                 });
                 socket.on('receiveTimeStop', function (isWiner) {
                     if (isWiner) {
+                        app.TypeMess = "alert alert-success"
                         app.textAlert = "Đối thủ bỏ cuộc"
                         app.isStartGame = false
                         app.TextTypeChessWin = app.TextTypeChessOfUser
@@ -278,6 +338,7 @@
                         app.isStartGame = false
                         app.isShowWinner = true
                     } else {
+                        app.TypeMess = "alert alert-danger"
                         app.textAlert = "Bạn hết thời gian"
                         app.isStartGame = false
                         app.TextTypeChessWin = app.TextTypeChessOfUser ? "O" : "X"
@@ -285,6 +346,13 @@
                         app.isStartGame = false
                         app.isShowWinner = true
                     }
+                });
+                socket.on('lstIdRoomFromSV', function (lstIdRoomSV) {
+                    app.lstIdRoom = JSON.parse(JSON.stringify(lstIdRoomSV))
+                });
+                socket.on('Existmanager', function () {
+                    app.TypeMess = "alert alert-warning"
+                    app.textAlert = "Bạn đã có phòng"
                 });
             }
         });
